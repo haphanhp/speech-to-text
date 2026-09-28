@@ -16,3 +16,11 @@ Có manifest.json + icon để cài thành PWA (app riêng, ghim được taskba
 Có sw.js (service worker tối giản, không cache gì) — chỉ để Chrome chấp nhận cho cài đặt PWA.
 Cửa sổ tự co nhỏ (320×480) và tự ghim góc dưới-phải màn hình mỗi lần mở (script resizeTo/moveTo, chỉ chạy khi mở ở chế độ app đã cài).
 Text nhận được tự copy vào clipboard khi dừng nói (navigator.clipboard.writeText, có fallback execCommand('copy') nếu trình duyệt chặn).
+
+### Cách cài vào máy (1 lần)
+
+1. Mở link deploy bằng Chrome.
+2. Bấm menu ⋮ góc phải → "Cài đặt Nói ra chữ..." (Install).
+3. Chuột phải icon app vừa mở dưới taskbar → "Ghim vào Taskbar".
+4. Lần đầu dùng, Chrome sẽ xin quyền micro — cho phép.
+5. Script đã thu nhỏ cửa sổ lại mỗi lần mở, không mất công chỉnh sửa nhiều lần, không gián đoạn công việc, giảm ma sát UX.
