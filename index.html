@@ -27,39 +27,42 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
-    min-height:100vh;
-    padding:24px;
-    gap:20px;
+    justify-content:flex-start;
+    height:100vh;
+    width:100vw;
+    overflow:hidden;
+    padding:16px;
+    gap:12px;
     -webkit-user-select:none;
     user-select:none;
   }
   h1{
-    font-size:18px;
+    font-size:15px;
     font-weight:600;
-    margin:0;
+    margin:2px 0 0 0;
     color:var(--text);
   }
   #status{
-    font-size:14px;
+    font-size:12px;
     color:var(--muted);
-    min-height:20px;
+    min-height:16px;
     text-align:center;
   }
   #micBtn{
-    width:120px;
-    height:120px;
+    width:76px;
+    height:76px;
     border-radius:50%;
     border:none;
     background:var(--accent);
     color:white;
-    font-size:44px;
+    font-size:30px;
     display:flex;
     align-items:center;
     justify-content:center;
     cursor:pointer;
     box-shadow:0 0 0 0 rgba(37,99,235,0.5);
     transition:background .15s, transform .1s;
+    flex:none;
   }
   #micBtn:active{ transform:scale(0.96); }
   #micBtn.listening{
@@ -73,38 +76,40 @@
   }
   #transcript{
     width:100%;
-    max-width:480px;
-    min-height:120px;
-    max-height:40vh;
+    max-width:300px;
+    flex:1 1 auto;
+    min-height:0;
     overflow-y:auto;
     background:var(--panel);
-    border-radius:12px;
-    padding:14px 16px;
-    font-size:16px;
-    line-height:1.5;
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:14px;
+    line-height:1.45;
     white-space:pre-wrap;
     word-break:break-word;
   }
   #transcript .interim{ color:var(--muted); }
   #actions{
     display:flex;
-    gap:10px;
+    gap:8px;
+    flex:none;
+    padding-bottom:4px;
   }
   button.secondary{
     background:var(--panel);
     color:var(--text);
     border:1px solid #334155;
     border-radius:8px;
-    padding:8px 14px;
-    font-size:13px;
+    padding:6px 12px;
+    font-size:12px;
     cursor:pointer;
   }
   button.secondary:active{ transform:scale(0.97); }
   #unsupported{
-    max-width:420px;
+    max-width:280px;
     text-align:center;
     color:var(--muted);
-    font-size:14px;
+    font-size:13px;
     display:none;
   }
 </style>
@@ -125,6 +130,22 @@
 
 <script>
 (function(){
+  // Tự co nhỏ cửa sổ và ghim vào góc dưới-phải màn hình mỗi lần mở,
+  // để không phải tự tay kéo nhỏ lại mỗi lần bấm icon.
+  // Chỉ chạy khi đang mở dưới dạng app đã cài (PWA), không chạy khi mở như một tab bình thường.
+  (function pinToCorner(){
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+    if (!isStandalone) return;
+    try {
+      const w = 320, h = 480, margin = 16;
+      const x = Math.max(0, window.screen.availWidth - w - margin);
+      const y = Math.max(0, window.screen.availHeight - h - margin);
+      window.resizeTo(w, h);
+      window.moveTo(x, y);
+    } catch (e) { /* trình duyệt chặn thì thôi, không sao */ }
+  })();
+
   const micBtn = document.getElementById('micBtn');
   const statusEl = document.getElementById('status');
   const transcriptEl = document.getElementById('transcript');
