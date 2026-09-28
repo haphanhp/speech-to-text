@@ -26,9 +26,9 @@ Text nhận được tự copy vào clipboard khi dừng nói (navigator.clipboa
 5. Script đã thu nhỏ cửa sổ lại mỗi lần mở, không mất công chỉnh sửa nhiều lần, không gián đoạn công việc, giảm ma sát UX.
 
 ### Minh họa 
-![image.png](https://raw.githubusercontent.com/tudotaichinh/image-auto/Obsidian/Obsidian20260928164815.png)
+![image.png|50x50](https://raw.githubusercontent.com/tudotaichinh/image-auto/Obsidian/Obsidian20260928164815.png)
 ghim trên thanh taskbar tiện sử dụng
-![image.png](https://raw.githubusercontent.com/tudotaichinh/image-auto/Obsidian/Obsidian20260928164900.png)
+![image.png|50x50](https://raw.githubusercontent.com/tudotaichinh/image-auto/Obsidian/Obsidian20260928164900.png)
 Miễn phí 
 Nhận tiếng Việt tốt
 Bổ trợ cho tăng tốc vibe-code 
