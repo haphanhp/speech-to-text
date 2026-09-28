@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nói ra chữ</title>
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#0f172a;
+    --panel:#1e293b;
+    --accent:#2563eb;
+    --accent-hot:#dc2626;
+    --text:#e2e8f0;
+    --muted:#94a3b8;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding:24px;
+    gap:20px;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  h1{
+    font-size:18px;
+    font-weight:600;
+    margin:0;
+    color:var(--text);
+  }
+  #status{
+    font-size:14px;
+    color:var(--muted);
+    min-height:20px;
+    text-align:center;
+  }
+  #micBtn{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    border:none;
+    background:var(--accent);
+    color:white;
+    font-size:44px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 0 0 0 rgba(37,99,235,0.5);
+    transition:background .15s, transform .1s;
+  }
+  #micBtn:active{ transform:scale(0.96); }
+  #micBtn.listening{
+    background:var(--accent-hot);
+    animation:pulse 1.4s infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(220,38,38,0.45); }
+    70%{ box-shadow:0 0 0 22px rgba(220,38,38,0); }
+    100%{ box-shadow:0 0 0 0 rgba(220,38,38,0); }
+  }
+  #transcript{
+    width:100%;
+    max-width:480px;
+    min-height:120px;
+    max-height:40vh;
+    overflow-y:auto;
+    background:var(--panel);
+    border-radius:12px;
+    padding:14px 16px;
+    font-size:16px;
+    line-height:1.5;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  #transcript .interim{ color:var(--muted); }
+  #actions{
+    display:flex;
+    gap:10px;
+  }
+  button.secondary{
+    background:var(--panel);
+    color:var(--text);
+    border:1px solid #334155;
+    border-radius:8px;
+    padding:8px 14px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  button.secondary:active{ transform:scale(0.97); }
+  #unsupported{
+    max-width:420px;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    display:none;
+  }
+</style>
+</head>
+<body>
+  <h1>🎤 Nói ra chữ</h1>
+  <div id="status">Bấm nút để bắt đầu nói (tiếng Việt)</div>
+  <button id="micBtn" aria-label="Bắt đầu / dừng nói">🎤</button>
+  <div id="transcript"></div>
+  <div id="actions">
+    <button class="secondary" id="copyBtn">Copy</button>
+    <button class="secondary" id="clearBtn">Xoá</button>
+  </div>
+  <div id="unsupported">
+    Trình duyệt này không hỗ trợ nhận diện giọng nói (Web Speech API).
+    Hãy mở trang này bằng Google Chrome hoặc Microsoft Edge.
+  </div>
+
+<script>
+(function(){
+  const micBtn = document.getElementById('micBtn');
+  const statusEl = document.getElementById('status');
+  const transcriptEl = document.getElementById('transcript');
+  const copyBtn = document.getElementById('copyBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const unsupportedEl = document.getElementById('unsupported');
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    micBtn.disabled = true;
+    micBtn.style.opacity = 0.4;
+    statusEl.textContent = '';
+    unsupportedEl.style.display = 'block';
+    return;
+  }
+
+  let recognition = null;
+  let listening = false;
+  let finalText = '';
+
+  function buildRecognition(){
+    const r = new SpeechRecognition();
+    r.lang = 'vi-VN';
+    r.continuous = true;
+    r.interimResults = true;
+
+    r.onresult = function(event){
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++){
+        const chunk = event.results[i][0].transcript;
+        if (event.results[i].isFinal){
+          finalText += chunk + ' ';
+        } else {
+          interim += chunk;
+        }
+      }
+      render(interim);
+    };
+
+    r.onerror = function(event){
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+      statusEl.textContent = 'Lỗi: ' + event.error;
+    };
+
+    r.onend = function(){
+      listening = false;
+      micBtn.classList.remove('listening');
+      micBtn.textContent = '🎤';
+      if (finalText.trim().length){
+        copyToClipboard(finalText.trim());
+        statusEl.textContent = 'Đã copy vào clipboard — dán bằng Ctrl+V';
+      } else {
+        statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
+      }
+    };
+
+    return r;
+  }
+
+  function render(interim){
+    transcriptEl.innerHTML = escapeHtml(finalText) +
+      (interim ? '<span class="interim">' + escapeHtml(interim) + '</span>' : '');
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function copyToClipboard(text){
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  micBtn.addEventListener('click', function(){
+    if (listening){
+      recognition && recognition.stop();
+      return;
+    }
+    finalText = '';
+    transcriptEl.innerHTML = '';
+    recognition = buildRecognition();
+    try {
+      recognition.start();
+      listening = true;
+      micBtn.classList.add('listening');
+      micBtn.textContent = '⏹';
+      statusEl.textContent = 'Đang nghe... bấm lần nữa để dừng';
+    } catch (e){
+      statusEl.textContent = 'Không mở được micro: ' + e.message;
+    }
+  });
+
+  copyBtn.addEventListener('click', function(){
+    const text = transcriptEl.textContent.trim();
+    if (!text) return;
+    copyToClipboard(text);
+    statusEl.textContent = 'Đã copy vào clipboard';
+  });
+
+  clearBtn.addEventListener('click', function(){
+    finalText = '';
+    transcriptEl.innerHTML = '';
+    statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
+  });
+
+  if ('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
+})();
+</script>
+</body>
+</html>
