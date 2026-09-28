@@ -24,3 +24,13 @@ Text nhận được tự copy vào clipboard khi dừng nói (navigator.clipboa
 3. Chuột phải icon app vừa mở dưới taskbar → "Ghim vào Taskbar".
 4. Lần đầu dùng, Chrome sẽ xin quyền micro — cho phép.
 5. Script đã thu nhỏ cửa sổ lại mỗi lần mở, không mất công chỉnh sửa nhiều lần, không gián đoạn công việc, giảm ma sát UX.
+
+### Minh họa 
+![image.png](https://raw.githubusercontent.com/tudotaichinh/image-auto/Obsidian/Obsidian20260928164815.png)
+ghim trên thanh taskbar tiện sử dụng
+![image.png](https://raw.githubusercontent.com/tudotaichinh/image-auto/Obsidian/Obsidian20260928164900.png)
+Miễn phí 
+Nhận tiếng Việt tốt
+Bổ trợ cho tăng tốc vibe-code 
+Không cần cài MCP
+Không gây nặng máy
