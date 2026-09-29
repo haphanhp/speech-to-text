@@ -152,7 +152,7 @@
 </head>
 <body>
   <h1>🎤 Nói ra chữ</h1>
-  <div id="status">Bấm nút để bắt đầu nói (tiếng Việt)</div>
+  <div id="status">Bấm Space hoặc nút để bắt đầu nói (tiếng Việt)</div>
   <button id="micBtn" aria-label="Bắt đầu / dừng nói">🎤</button>
   <div id="transcript"></div>
   <div id="actions">
@@ -227,6 +227,7 @@
         showCopied();
         statusEl.textContent = 'Đã copy vào clipboard — dán bằng Ctrl+V';
       } else {
+        setTitle('failed');
         statusEl.textContent = 'Không tự copy được — bấm nút Copy';
       }
     });
@@ -243,6 +244,7 @@
     void copyBtn.offsetWidth; // chạy lại animation nếu đang hiện
     copyBtn.classList.add('copied');
     copyLabel.textContent = 'Copied';
+    setTitle('copied');
     clearTimeout(copiedResetTimer);
     copiedResetTimer = setTimeout(resetCopyBtn, 2000);
   }
@@ -250,7 +252,18 @@
   function resetCopyBtn(){
     copyBtn.classList.remove('copied');
     copyLabel.textContent = 'Copy';
+    if (!listening) setTitle('idle');
   }
+
+  // Tiêu đề cửa sổ phản ánh trạng thái để script AutoHotkey biết khi nào xong việc.
+  const TITLES = {
+    idle: 'Nói ra chữ',
+    listening: '● Đang nghe — Nói ra chữ',
+    copying: '… Đang copy — Nói ra chữ',
+    copied: '✓ Đã copy — Nói ra chữ',
+    failed: '⚠ Chưa copy — Nói ra chữ'
+  };
+  function setTitle(state){ document.title = TITLES[state]; }
 
   function buildRecognition(){
     const r = new SpeechRecognition();
@@ -279,6 +292,7 @@
     r.onend = function(){
       listening = false;
       stopping = false;
+      setTitle(finalText.trim() ? 'copying' : 'idle');
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
       autoCopyNow();
@@ -334,6 +348,7 @@
       listening = true;
       micBtn.classList.add('listening');
       micBtn.textContent = '⏹';
+      setTitle('listening');
       statusEl.textContent = 'Đang nghe... bấm Space hoặc nút để dừng';
     } catch (e){
       statusEl.textContent = 'Không mở được micro: ' + e.message;
@@ -352,23 +367,14 @@
     if (listening) stopListening(); else startListening();
   });
 
-  // Phím tắt (khi cửa sổ app đang được focus):
-  //   Alt+Space hoặc F9 -> bắt đầu nói (F9 dành cho script AutoHotkey gửi vào)
-  //   Space             -> dừng nói (chỉ khi đang nghe, lúc không nghe thì Space như bình thường)
+  // Phím tắt (khi cửa sổ app đang được focus): Space = bắt đầu nói, Space lần nữa = dừng.
+  // Script AutoHotkey chỉ cần đưa cửa sổ này lên trước (Alt+Space), còn lại bấm Space.
   let swallowSpaceKeyup = false;
   document.addEventListener('keydown', function(e){
-    if (e.repeat) return;
-    if ((e.altKey && e.code === 'Space') || e.code === 'F9'){
-      e.preventDefault();
-      if (e.code === 'Space') swallowSpaceKeyup = true;
-      startListening();
-      return;
-    }
-    if (e.code === 'Space' && !e.altKey && !e.ctrlKey && !e.metaKey && listening){
-      e.preventDefault();
-      swallowSpaceKeyup = true;
-      stopListening();
-    }
+    if (e.code !== 'Space' || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    swallowSpaceKeyup = true;
+    if (listening) stopListening(); else startListening();
   });
   // Nút micro đang focus sẽ tự "click" khi nhả Space; chặn để không bật/tắt hai lần.
   document.addEventListener('keyup', function(e){

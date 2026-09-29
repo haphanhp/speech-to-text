@@ -39,5 +39,6 @@ Text nhận được tự copy vào clipboard ngay khi engine nhận diện kế
 
 ### Phím tắt
 
-- Trong cửa sổ app: `Alt+Space` (hoặc `F9`) để bắt đầu nói, `Space` để dừng (chỉ khi đang nghe, lúc không nghe thì Space như bình thường).
-- Phím tắt toàn cục: chạy `windows/noi-ra-chu.ahk` bằng AutoHotkey v2. Bấm `Alt+Space` ở bất kỳ cửa sổ nào để đưa app lên và bắt đầu nói; bấm `Space` để dừng, app tự copy, rồi script trả bạn về cửa sổ trước đó (tắt bằng `restorePrevWindow := false` trong file).
+- Trong cửa sổ app: `Space` bắt đầu nói, `Space` lần nữa dừng nói (app tự copy ngay khi engine kết thúc).
+- Phím tắt toàn cục: chạy `windows/noi-ra-chu.ahk` bằng AutoHotkey v2. Bấm `Alt+Space` ở bất kỳ cửa sổ nào để đưa app lên trước, rồi bấm `Space` để nói và `Space` để dừng. Khi app báo "Đã copy", script tự đưa bạn về cửa sổ trước đó để dán (tắt bằng `restorePrevWindow := false` trong file).
+- App đổi tiêu đề cửa sổ theo trạng thái (đang nghe, đang copy, đã copy, chưa copy) để script biết khi nào xong.
