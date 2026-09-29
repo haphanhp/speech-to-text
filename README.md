@@ -15,7 +15,7 @@ Xem chi tiết cấu hình máy và lý do GPU là nút thắt: xem file cấu h
 Có manifest.json + icon để cài thành PWA (app riêng, ghim được taskbar).
 Có sw.js (service worker tối giản, không cache gì) — chỉ để Chrome chấp nhận cho cài đặt PWA.
 Cửa sổ tự co nhỏ (320×480) và tự ghim góc dưới-phải màn hình mỗi lần mở (script resizeTo/moveTo, chỉ chạy khi mở ở chế độ app đã cài).
-Text nhận được tự copy vào clipboard khi dừng nói (navigator.clipboard.writeText, có fallback execCommand('copy') nếu trình duyệt chặn).
+Text nhận được tự copy vào clipboard 3 giây sau khi bấm dừng (navigator.clipboard.writeText, có fallback execCommand('copy') nếu trình duyệt chặn). Nút Copy đổi thành "Copied" kèm dấu tick động trong 2 giây khi copy thành công.
 
 ### Cách cài vào máy (1 lần)
 

@@ -105,6 +105,42 @@
     cursor:pointer;
   }
   button.secondary:active{ transform:scale(0.97); }
+  #copyBtn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    min-width:84px;
+    transition:background .2s, border-color .2s, color .2s;
+  }
+  #copyBtn .tick{
+    display:none;
+    width:14px;
+    height:14px;
+  }
+  #copyBtn .tick path{
+    fill:none;
+    stroke:currentColor;
+    stroke-width:3;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    stroke-dasharray:24;
+    stroke-dashoffset:24;
+  }
+  #copyBtn.copied{
+    background:#16a34a;
+    border-color:#16a34a;
+    color:#fff;
+    animation:pop .3s ease-out;
+  }
+  #copyBtn.copied .tick{ display:inline-block; }
+  #copyBtn.copied .tick path{ animation:draw .35s .05s ease-out forwards; }
+  @keyframes draw{ to{ stroke-dashoffset:0; } }
+  @keyframes pop{
+    0%{ transform:scale(0.92); }
+    60%{ transform:scale(1.08); }
+    100%{ transform:scale(1); }
+  }
   #unsupported{
     max-width:280px;
     text-align:center;
@@ -120,7 +156,7 @@
   <button id="micBtn" aria-label="Bắt đầu / dừng nói">🎤</button>
   <div id="transcript"></div>
   <div id="actions">
-    <button class="secondary" id="copyBtn">Copy</button>
+    <button class="secondary" id="copyBtn"><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg><span id="copyLabel">Copy</span></button>
     <button class="secondary" id="clearBtn">Xoá</button>
   </div>
   <div id="unsupported">
@@ -150,6 +186,7 @@
   const statusEl = document.getElementById('status');
   const transcriptEl = document.getElementById('transcript');
   const copyBtn = document.getElementById('copyBtn');
+  const copyLabel = document.getElementById('copyLabel');
   const clearBtn = document.getElementById('clearBtn');
   const unsupportedEl = document.getElementById('unsupported');
 
@@ -166,6 +203,49 @@
   let recognition = null;
   let listening = false;
   let finalText = '';
+
+  // Sau khi bấm dừng, chờ 3 giây (để nhận nốt phần chữ cuối) rồi tự copy.
+  const AUTO_COPY_DELAY_MS = 3000;
+  let autoCopyTimer = null;
+  let copiedResetTimer = null;
+
+  function cancelAutoCopy(){
+    if (autoCopyTimer){ clearTimeout(autoCopyTimer); autoCopyTimer = null; }
+  }
+
+  function scheduleAutoCopy(){
+    cancelAutoCopy();
+    autoCopyTimer = setTimeout(function(){
+      autoCopyTimer = null;
+      const text = finalText.trim();
+      if (!text){
+        statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
+        return;
+      }
+      copyToClipboard(text).then(function(ok){
+        if (ok){
+          showCopied();
+          statusEl.textContent = 'Đã copy vào clipboard — dán bằng Ctrl+V';
+        } else {
+          statusEl.textContent = 'Không tự copy được — bấm nút Copy';
+        }
+      });
+    }, AUTO_COPY_DELAY_MS);
+  }
+
+  function showCopied(){
+    copyBtn.classList.remove('copied');
+    void copyBtn.offsetWidth; // chạy lại animation nếu đang hiện
+    copyBtn.classList.add('copied');
+    copyLabel.textContent = 'Copied';
+    clearTimeout(copiedResetTimer);
+    copiedResetTimer = setTimeout(resetCopyBtn, 2000);
+  }
+
+  function resetCopyBtn(){
+    copyBtn.classList.remove('copied');
+    copyLabel.textContent = 'Copy';
+  }
 
   function buildRecognition(){
     const r = new SpeechRecognition();
@@ -196,8 +276,9 @@
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
       if (finalText.trim().length){
-        copyToClipboard(finalText.trim());
-        statusEl.textContent = 'Đã copy vào clipboard — dán bằng Ctrl+V';
+        // Nếu tự kết thúc (không do bấm dừng) thì cũng hẹn giờ copy.
+        if (!autoCopyTimer) scheduleAutoCopy();
+        statusEl.textContent = 'Sẽ tự copy sau ' + (AUTO_COPY_DELAY_MS / 1000) + ' giây...';
       } else {
         statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
       }
@@ -216,12 +297,14 @@
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // Trả về Promise<boolean>: true nếu copy thành công.
   function copyToClipboard(text){
     if (navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); });
-    } else {
-      fallbackCopy(text);
+      return navigator.clipboard.writeText(text)
+        .then(function(){ return true; })
+        .catch(function(){ return fallbackCopy(text); });
     }
+    return Promise.resolve(fallbackCopy(text));
   }
 
   function fallbackCopy(text){
@@ -232,15 +315,21 @@
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
-    try { document.execCommand('copy'); } catch(e){}
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch(e){}
     document.body.removeChild(ta);
+    return ok;
   }
 
   micBtn.addEventListener('click', function(){
     if (listening){
       recognition && recognition.stop();
+      statusEl.textContent = 'Sẽ tự copy sau ' + (AUTO_COPY_DELAY_MS / 1000) + ' giây...';
+      scheduleAutoCopy();
       return;
     }
+    cancelAutoCopy();
+    resetCopyBtn();
     finalText = '';
     transcriptEl.innerHTML = '';
     recognition = buildRecognition();
@@ -258,11 +347,20 @@
   copyBtn.addEventListener('click', function(){
     const text = transcriptEl.textContent.trim();
     if (!text) return;
-    copyToClipboard(text);
-    statusEl.textContent = 'Đã copy vào clipboard';
+    cancelAutoCopy();
+    copyToClipboard(text).then(function(ok){
+      if (ok){
+        showCopied();
+        statusEl.textContent = 'Đã copy vào clipboard';
+      } else {
+        statusEl.textContent = 'Không copy được — hãy thử lại';
+      }
+    });
   });
 
   clearBtn.addEventListener('click', function(){
+    cancelAutoCopy();
+    resetCopyBtn();
     finalText = '';
     transcriptEl.innerHTML = '';
     statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
