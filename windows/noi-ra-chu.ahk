@@ -5,7 +5,7 @@
 ;   2. Bấm Space -> bắt đầu nói.   Bấm Space lần nữa -> dừng, app tự copy.
 ;   3. Khi app báo "Đã copy", script tự đưa bạn về cửa sổ trước đó để dán (Ctrl+V).
 ;
-; Cần mở sẵn app "Nói ra chữ" (cửa sổ PWA hoặc tab) và để nó chạy nền.
+; Nếu app chưa chạy, script tự mở app đã ghim trên taskbar (Win+<số>, xem taskbarSlot).
 ; Nếu bạn đang dùng AutoHotkey v1 thì báo lại để đổi cú pháp.
 
 #Requires AutoHotkey v2.0
@@ -13,6 +13,8 @@
 SetTitleMatchMode 2
 
 appTitle := "Nói ra chữ"        ; trùng với <title> của trang (app còn thêm tiền tố trạng thái)
+taskbarSlot := 1                ; vị trí app trên taskbar (1 = ngoài cùng bên trái, không tính Start/Search/Task View).
+                                ; Nếu app chưa chạy, script gửi Win+<số> để mở app đã ghim. Đặt 0 để tắt.
 restorePrevWindow := true       ; false: ở lại cửa sổ app, không tự quay về
 restoreTimeoutMs := 120000      ; bỏ theo dõi nếu quá lâu không dùng
 
@@ -22,13 +24,26 @@ armedAt := 0
 
 !Space:: {
     global prevHwnd, sawListening, armedAt
+    cur := WinExist("A")
     appHwnd := WinExist(appTitle)
     if !appHwnd {
-        ToolTip "Chưa mở app Nói ra chữ"
-        SetTimer () => ToolTip(), -1500
-        return
+        if !(taskbarSlot >= 1 && taskbarSlot <= 9) {
+            ToolTip "Chưa mở app Nói ra chữ"
+            SetTimer () => ToolTip(), -1500
+            return
+        }
+        ; App chưa chạy: mở app đã ghim trên taskbar bằng Win+<số>.
+        KeyWait "Space", "T1"
+        KeyWait "Alt", "T1"
+        Send "#" taskbarSlot
+        appHwnd := WinWait(appTitle, , 8)
+        if !appHwnd {
+            ToolTip "Không mở được app (kiểm tra taskbarSlot)"
+            SetTimer () => ToolTip(), -2000
+            return
+        }
+        Sleep 800               ; chờ trang tải xong để nhận phím Space
     }
-    cur := WinExist("A")
     if cur != appHwnd
         prevHwnd := cur
     sawListening := false
