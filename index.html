@@ -204,8 +204,9 @@
   let listening = false;
   let finalText = '';
 
-  // Sau khi bấm dừng, chờ 3 giây (để nhận nốt phần chữ cuối) rồi tự copy.
-  const AUTO_COPY_DELAY_MS = 3000;
+  // Copy ngay khi engine báo kết thúc (onend), lúc đó phần chữ cuối đã về đủ.
+  // Phòng khi onend không bắn, sau khi bấm dừng chờ tối đa 1,5 giây rồi vẫn copy.
+  const MAX_WAIT_AFTER_STOP_MS = 1500;
   let autoCopyTimer = null;
   let copiedResetTimer = null;
 
@@ -213,24 +214,27 @@
     if (autoCopyTimer){ clearTimeout(autoCopyTimer); autoCopyTimer = null; }
   }
 
-  function scheduleAutoCopy(){
+  function autoCopyNow(){
     cancelAutoCopy();
-    autoCopyTimer = setTimeout(function(){
-      autoCopyTimer = null;
-      const text = finalText.trim();
-      if (!text){
-        statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
-        return;
+    const text = finalText.trim();
+    if (!text){
+      statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
+      return;
+    }
+    copyToClipboard(text).then(function(ok){
+      if (ok){
+        showCopied();
+        statusEl.textContent = 'Đã copy vào clipboard — dán bằng Ctrl+V';
+      } else {
+        statusEl.textContent = 'Không tự copy được — bấm nút Copy';
       }
-      copyToClipboard(text).then(function(ok){
-        if (ok){
-          showCopied();
-          statusEl.textContent = 'Đã copy vào clipboard — dán bằng Ctrl+V';
-        } else {
-          statusEl.textContent = 'Không tự copy được — bấm nút Copy';
-        }
-      });
-    }, AUTO_COPY_DELAY_MS);
+    });
+  }
+
+  // Chốt an toàn: nếu onend không bắn thì vẫn tự copy sau một khoảng ngắn.
+  function scheduleSafetyCopy(){
+    cancelAutoCopy();
+    autoCopyTimer = setTimeout(autoCopyNow, MAX_WAIT_AFTER_STOP_MS);
   }
 
   function showCopied(){
@@ -275,13 +279,7 @@
       listening = false;
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
-      if (finalText.trim().length){
-        // Nếu tự kết thúc (không do bấm dừng) thì cũng hẹn giờ copy.
-        if (!autoCopyTimer) scheduleAutoCopy();
-        statusEl.textContent = 'Sẽ tự copy sau ' + (AUTO_COPY_DELAY_MS / 1000) + ' giây...';
-      } else {
-        statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
-      }
+      autoCopyNow();
     };
 
     return r;
@@ -324,8 +322,8 @@
   micBtn.addEventListener('click', function(){
     if (listening){
       recognition && recognition.stop();
-      statusEl.textContent = 'Sẽ tự copy sau ' + (AUTO_COPY_DELAY_MS / 1000) + ' giây...';
-      scheduleAutoCopy();
+      statusEl.textContent = 'Đang chốt chữ cuối...';
+      scheduleSafetyCopy();
       return;
     }
     cancelAutoCopy();
