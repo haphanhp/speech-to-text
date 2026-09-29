@@ -105,6 +105,42 @@
     cursor:pointer;
   }
   button.secondary:active{ transform:scale(0.97); }
+  #copyBtn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    min-width:84px;
+    transition:background .2s, border-color .2s, color .2s;
+  }
+  #copyBtn .tick{
+    display:none;
+    width:14px;
+    height:14px;
+  }
+  #copyBtn .tick path{
+    fill:none;
+    stroke:currentColor;
+    stroke-width:3;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    stroke-dasharray:24;
+    stroke-dashoffset:24;
+  }
+  #copyBtn.copied{
+    background:#16a34a;
+    border-color:#16a34a;
+    color:#fff;
+    animation:pop .3s ease-out;
+  }
+  #copyBtn.copied .tick{ display:inline-block; }
+  #copyBtn.copied .tick path{ animation:draw .35s .05s ease-out forwards; }
+  @keyframes draw{ to{ stroke-dashoffset:0; } }
+  @keyframes pop{
+    0%{ transform:scale(0.92); }
+    60%{ transform:scale(1.08); }
+    100%{ transform:scale(1); }
+  }
   #unsupported{
     max-width:280px;
     text-align:center;
@@ -116,11 +152,11 @@
 </head>
 <body>
   <h1>🎤 Nói ra chữ</h1>
-  <div id="status">Bấm nút để bắt đầu nói (tiếng Việt)</div>
+  <div id="status">Bấm Space hoặc nút để bắt đầu nói (tiếng Việt)</div>
   <button id="micBtn" aria-label="Bắt đầu / dừng nói">🎤</button>
   <div id="transcript"></div>
   <div id="actions">
-    <button class="secondary" id="copyBtn">Copy</button>
+    <button class="secondary" id="copyBtn"><svg class="tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg><span id="copyLabel">Copy</span></button>
     <button class="secondary" id="clearBtn">Xoá</button>
   </div>
   <div id="unsupported">
@@ -150,6 +186,7 @@
   const statusEl = document.getElementById('status');
   const transcriptEl = document.getElementById('transcript');
   const copyBtn = document.getElementById('copyBtn');
+  const copyLabel = document.getElementById('copyLabel');
   const clearBtn = document.getElementById('clearBtn');
   const unsupportedEl = document.getElementById('unsupported');
 
@@ -165,7 +202,68 @@
 
   let recognition = null;
   let listening = false;
+  let stopping = false;
   let finalText = '';
+
+  // Copy ngay khi engine báo kết thúc (onend), lúc đó phần chữ cuối đã về đủ.
+  // Phòng khi onend không bắn, sau khi bấm dừng chờ tối đa 1,5 giây rồi vẫn copy.
+  const MAX_WAIT_AFTER_STOP_MS = 1500;
+  let autoCopyTimer = null;
+  let copiedResetTimer = null;
+
+  function cancelAutoCopy(){
+    if (autoCopyTimer){ clearTimeout(autoCopyTimer); autoCopyTimer = null; }
+  }
+
+  function autoCopyNow(){
+    cancelAutoCopy();
+    const text = finalText.trim();
+    if (!text){
+      statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
+      return;
+    }
+    copyToClipboard(text).then(function(ok){
+      if (ok){
+        showCopied();
+        statusEl.textContent = 'Đã copy vào clipboard — dán bằng Ctrl+V';
+      } else {
+        setTitle('failed');
+        statusEl.textContent = 'Không tự copy được — bấm nút Copy';
+      }
+    });
+  }
+
+  // Chốt an toàn: nếu onend không bắn thì vẫn tự copy sau một khoảng ngắn.
+  function scheduleSafetyCopy(){
+    cancelAutoCopy();
+    autoCopyTimer = setTimeout(autoCopyNow, MAX_WAIT_AFTER_STOP_MS);
+  }
+
+  function showCopied(){
+    copyBtn.classList.remove('copied');
+    void copyBtn.offsetWidth; // chạy lại animation nếu đang hiện
+    copyBtn.classList.add('copied');
+    copyLabel.textContent = 'Copied';
+    setTitle('copied');
+    clearTimeout(copiedResetTimer);
+    copiedResetTimer = setTimeout(resetCopyBtn, 2000);
+  }
+
+  function resetCopyBtn(){
+    copyBtn.classList.remove('copied');
+    copyLabel.textContent = 'Copy';
+    if (!listening) setTitle('idle');
+  }
+
+  // Tiêu đề cửa sổ phản ánh trạng thái để script AutoHotkey biết khi nào xong việc.
+  const TITLES = {
+    idle: 'Nói ra chữ',
+    listening: '● Đang nghe — Nói ra chữ',
+    copying: '… Đang copy — Nói ra chữ',
+    copied: '✓ Đã copy — Nói ra chữ',
+    failed: '⚠ Chưa copy — Nói ra chữ'
+  };
+  function setTitle(state){ document.title = TITLES[state]; }
 
   function buildRecognition(){
     const r = new SpeechRecognition();
@@ -193,14 +291,11 @@
 
     r.onend = function(){
       listening = false;
+      stopping = false;
+      setTitle(finalText.trim() ? 'copying' : 'idle');
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
-      if (finalText.trim().length){
-        copyToClipboard(finalText.trim());
-        statusEl.textContent = 'Đã copy vào clipboard — dán bằng Ctrl+V';
-      } else {
-        statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';
-      }
+      autoCopyNow();
     };
 
     return r;
@@ -216,12 +311,14 @@
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // Trả về Promise<boolean>: true nếu copy thành công.
   function copyToClipboard(text){
     if (navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); });
-    } else {
-      fallbackCopy(text);
+      return navigator.clipboard.writeText(text)
+        .then(function(){ return true; })
+        .catch(function(){ return fallbackCopy(text); });
     }
+    return Promise.resolve(fallbackCopy(text));
   }
 
   function fallbackCopy(text){
@@ -232,15 +329,17 @@
     document.body.appendChild(ta);
     ta.focus();
     ta.select();
-    try { document.execCommand('copy'); } catch(e){}
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch(e){}
     document.body.removeChild(ta);
+    return ok;
   }
 
-  micBtn.addEventListener('click', function(){
-    if (listening){
-      recognition && recognition.stop();
-      return;
-    }
+  function startListening(){
+    if (listening) return;
+    stopping = false;
+    cancelAutoCopy();
+    resetCopyBtn();
     finalText = '';
     transcriptEl.innerHTML = '';
     recognition = buildRecognition();
@@ -249,20 +348,59 @@
       listening = true;
       micBtn.classList.add('listening');
       micBtn.textContent = '⏹';
-      statusEl.textContent = 'Đang nghe... bấm lần nữa để dừng';
+      setTitle('listening');
+      statusEl.textContent = 'Đang nghe... bấm Space hoặc nút để dừng';
     } catch (e){
       statusEl.textContent = 'Không mở được micro: ' + e.message;
+    }
+  }
+
+  function stopListening(){
+    if (!listening || stopping) return;
+    stopping = true;
+    recognition && recognition.stop();
+    statusEl.textContent = 'Đang chốt chữ cuối...';
+    scheduleSafetyCopy();
+  }
+
+  micBtn.addEventListener('click', function(){
+    if (listening) stopListening(); else startListening();
+  });
+
+  // Phím tắt (khi cửa sổ app đang được focus): Space = bắt đầu nói, Space lần nữa = dừng.
+  // Script AutoHotkey chỉ cần đưa cửa sổ này lên trước (Alt+Space), còn lại bấm Space.
+  let swallowSpaceKeyup = false;
+  document.addEventListener('keydown', function(e){
+    if (e.code !== 'Space' || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    swallowSpaceKeyup = true;
+    if (listening) stopListening(); else startListening();
+  });
+  // Nút micro đang focus sẽ tự "click" khi nhả Space; chặn để không bật/tắt hai lần.
+  document.addEventListener('keyup', function(e){
+    if (e.code === 'Space' && swallowSpaceKeyup){
+      e.preventDefault();
+      swallowSpaceKeyup = false;
     }
   });
 
   copyBtn.addEventListener('click', function(){
     const text = transcriptEl.textContent.trim();
     if (!text) return;
-    copyToClipboard(text);
-    statusEl.textContent = 'Đã copy vào clipboard';
+    cancelAutoCopy();
+    copyToClipboard(text).then(function(ok){
+      if (ok){
+        showCopied();
+        statusEl.textContent = 'Đã copy vào clipboard';
+      } else {
+        statusEl.textContent = 'Không copy được — hãy thử lại';
+      }
+    });
   });
 
   clearBtn.addEventListener('click', function(){
+    cancelAutoCopy();
+    resetCopyBtn();
     finalText = '';
     transcriptEl.innerHTML = '';
     statusEl.textContent = 'Bấm nút để bắt đầu nói (tiếng Việt)';

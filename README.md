@@ -15,7 +15,7 @@ Xem chi tiết cấu hình máy và lý do GPU là nút thắt: xem file cấu h
 Có manifest.json + icon để cài thành PWA (app riêng, ghim được taskbar).
 Có sw.js (service worker tối giản, không cache gì) — chỉ để Chrome chấp nhận cho cài đặt PWA.
 Cửa sổ tự co nhỏ (320×480) và tự ghim góc dưới-phải màn hình mỗi lần mở (script resizeTo/moveTo, chỉ chạy khi mở ở chế độ app đã cài).
-Text nhận được tự copy vào clipboard khi dừng nói (navigator.clipboard.writeText, có fallback execCommand('copy') nếu trình duyệt chặn).
+Text nhận được tự copy vào clipboard ngay khi engine nhận diện kết thúc sau khi bấm dừng (thường dưới 1 giây) (navigator.clipboard.writeText, có fallback execCommand('copy') nếu trình duyệt chặn). Nút Copy đổi thành "Copied" kèm dấu tick động trong 2 giây khi copy thành công.
 
 ### Cách cài vào máy (1 lần)
 
@@ -37,3 +37,10 @@ Text nhận được tự copy vào clipboard khi dừng nói (navigator.clipboa
 
 <img src="https://raw.githubusercontent.com/tudotaichinh/image-auto/Obsidian/Obsidian20260928164900.png" width="400">
 
+### Phím tắt
+
+Hướng dẫn đầy đủ: [huong-dan-phim-tat.md](huong-dan-phim-tat.md).
+
+- Trong cửa sổ app: `Space` bắt đầu nói, `Space` lần nữa dừng nói (app tự copy ngay khi engine kết thúc).
+- Phím tắt toàn cục (tuỳ chọn, chỉ cho máy bạn): chạy `windows/noi-ra-chu.ahk` bằng AutoHotkey v2. `Ctrl+Alt+Z` ở bất kỳ cửa sổ nào: nếu app đang chạy thì đưa lên trước, nếu chưa chạy thì tự mở bằng địa chỉ web (điền `appUrl` trong file). Sau đó `Space` để nói, `Space` để dừng. Khi app báo "Đã copy", script đưa bạn về cửa sổ trước đó (tắt bằng `restorePrevWindow := false`).
+- App đổi tiêu đề cửa sổ theo trạng thái (đang nghe, đang copy, đã copy, chưa copy) để script biết khi nào xong.
