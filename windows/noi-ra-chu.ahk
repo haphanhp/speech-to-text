@@ -4,8 +4,8 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-; ===== Nói ra chữ: Alt+Space = mở/đưa app lên trước; sau đó Space để nói, Space để dừng =====
-!Space::NoiRaChu.Focus()
+; ===== Nói ra chữ: Ctrl+Alt+Z = mở/đưa app lên trước; sau đó Space để nói, Space để dừng =====
+^!z::NoiRaChu.Focus()
 
 class NoiRaChu {
     ; --- Cấu hình ---
