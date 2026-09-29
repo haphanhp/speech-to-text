@@ -40,5 +40,5 @@ Text nhận được tự copy vào clipboard ngay khi engine nhận diện kế
 ### Phím tắt
 
 - Trong cửa sổ app: `Space` bắt đầu nói, `Space` lần nữa dừng nói (app tự copy ngay khi engine kết thúc).
-- Phím tắt toàn cục: chạy `windows/noi-ra-chu.ahk` bằng AutoHotkey v2. Bấm `Alt+Space` ở bất kỳ cửa sổ nào để đưa app lên trước (nếu app chưa chạy, script tự mở bằng shortcut đã cài của app, tìm ở thư mục taskbar đã ghim, `Chrome Apps`, `Brave Apps`, `Edge Apps`, Start Menu, Desktop), rồi bấm `Space` để nói và `Space` để dừng. Khi app báo "Đã copy", script tự đưa bạn về cửa sổ trước đó để dán (tắt bằng `restorePrevWindow := false` trong file).
+- Phím tắt toàn cục (tuỳ chọn, chỉ cho máy bạn): chạy `windows/noi-ra-chu.ahk` bằng AutoHotkey v2. `Alt+Space` ở bất kỳ cửa sổ nào: nếu app đang chạy thì đưa lên trước, nếu chưa chạy thì tự mở bằng địa chỉ web (điền `appUrl` trong file). Sau đó `Space` để nói, `Space` để dừng. Khi app báo "Đã copy", script đưa bạn về cửa sổ trước đó (tắt bằng `restorePrevWindow := false`).
 - App đổi tiêu đề cửa sổ theo trạng thái (đang nghe, đang copy, đã copy, chưa copy) để script biết khi nào xong.
