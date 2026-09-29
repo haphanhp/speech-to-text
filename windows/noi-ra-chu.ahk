@@ -5,7 +5,7 @@
 ;   2. Bấm Space -> bắt đầu nói.   Bấm Space lần nữa -> dừng, app tự copy.
 ;   3. Khi app báo "Đã copy", script tự đưa bạn về cửa sổ trước đó để dán (Ctrl+V).
 ;
-; Nếu app chưa chạy, script tự mở app đã ghim trên taskbar (Win+<số>, xem taskbarSlot).
+; Nếu app chưa chạy, script tự mở app bằng shortcut đã cài của nó (FindAppShortcut).
 ; Nếu bạn đang dùng AutoHotkey v1 thì báo lại để đổi cú pháp.
 
 #Requires AutoHotkey v2.0
@@ -13,8 +13,7 @@
 SetTitleMatchMode 2
 
 appTitle := "Nói ra chữ"        ; trùng với <title> của trang (app còn thêm tiền tố trạng thái)
-taskbarSlot := 1                ; vị trí app trên taskbar (1 = ngoài cùng bên trái, không tính Start/Search/Task View).
-                                ; Nếu app chưa chạy, script gửi Win+<số> để mở app đã ghim. Đặt 0 để tắt.
+launchIfNotRunning := true      ; app chưa chạy thì tự mở bằng shortcut đã cài (xem FindAppShortcut)
 restorePrevWindow := true       ; false: ở lại cửa sổ app, không tự quay về
 restoreTimeoutMs := 120000      ; bỏ theo dõi nếu quá lâu không dùng
 
@@ -27,19 +26,18 @@ armedAt := 0
     cur := WinExist("A")
     appHwnd := WinExist(appTitle)
     if !appHwnd {
-        if !(taskbarSlot >= 1 && taskbarSlot <= 9) {
-            ToolTip "Chưa mở app Nói ra chữ"
-            SetTimer () => ToolTip(), -1500
+        lnk := launchIfNotRunning ? FindAppShortcut() : ""
+        if !lnk {
+            ToolTip "Chưa mở app Nói ra chữ (không tìm thấy shortcut để tự mở)"
+            SetTimer () => ToolTip(), -2500
             return
         }
-        ; App chưa chạy: mở app đã ghim trên taskbar bằng Win+<số>.
-        KeyWait "Space", "T1"
-        KeyWait "Alt", "T1"
-        Send "#" taskbarSlot
-        appHwnd := WinWait(appTitle, , 8)
+        ; App chưa chạy: mở bằng chính shortcut của app đã cài, không phụ thuộc vị trí taskbar.
+        Run '"' lnk '"'
+        appHwnd := WinWait(appTitle, , 10)
         if !appHwnd {
-            ToolTip "Không mở được app (kiểm tra taskbarSlot)"
-            SetTimer () => ToolTip(), -2000
+            ToolTip "Không mở được app từ: " lnk
+            SetTimer () => ToolTip(), -3000
             return
         }
         Sleep 800               ; chờ trang tải xong để nhận phím Space
@@ -52,6 +50,23 @@ armedAt := 0
     WinWaitActive appHwnd, , 1
     if restorePrevWindow && prevHwnd
         SetTimer WatchApp, 150
+}
+
+; Tìm shortcut của app "Nói ra chữ" ở các nơi trình duyệt/Windows thường đặt.
+FindAppShortcut() {
+    dirs := [
+        A_AppData "\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar",   ; biểu tượng đã ghim ở taskbar
+        A_Programs "\Chrome Apps",
+        A_Programs "\Brave Apps",
+        A_Programs "\Edge Apps",
+        A_Programs,
+        A_Desktop
+    ]
+    for dir in dirs {
+        Loop Files, dir "\*Nói ra chữ*.lnk"
+            return A_LoopFileFullPath
+    }
+    return ""
 }
 
 ; Theo dõi tiêu đề cửa sổ app để biết khi nào nói xong và copy xong.
