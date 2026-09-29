@@ -37,3 +37,7 @@ Text nhận được tự copy vào clipboard ngay khi engine nhận diện kế
 
 <img src="https://raw.githubusercontent.com/tudotaichinh/image-auto/Obsidian/Obsidian20260928164900.png" width="400">
 
+### Phím tắt
+
+- Trong cửa sổ app: `Alt+Space` (hoặc `F9`) để bắt đầu nói, `Space` để dừng (chỉ khi đang nghe, lúc không nghe thì Space như bình thường).
+- Phím tắt toàn cục: chạy `windows/noi-ra-chu.ahk` bằng AutoHotkey v2. Bấm `Alt+Space` ở bất kỳ cửa sổ nào để đưa app lên và bắt đầu nói; bấm `Space` để dừng, app tự copy, rồi script trả bạn về cửa sổ trước đó (tắt bằng `restorePrevWindow := false` trong file).

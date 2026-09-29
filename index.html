@@ -202,6 +202,7 @@
 
   let recognition = null;
   let listening = false;
+  let stopping = false;
   let finalText = '';
 
   // Copy ngay khi engine báo kết thúc (onend), lúc đó phần chữ cuối đã về đủ.
@@ -277,6 +278,7 @@
 
     r.onend = function(){
       listening = false;
+      stopping = false;
       micBtn.classList.remove('listening');
       micBtn.textContent = '🎤';
       autoCopyNow();
@@ -319,13 +321,9 @@
     return ok;
   }
 
-  micBtn.addEventListener('click', function(){
-    if (listening){
-      recognition && recognition.stop();
-      statusEl.textContent = 'Đang chốt chữ cuối...';
-      scheduleSafetyCopy();
-      return;
-    }
+  function startListening(){
+    if (listening) return;
+    stopping = false;
     cancelAutoCopy();
     resetCopyBtn();
     finalText = '';
@@ -336,9 +334,47 @@
       listening = true;
       micBtn.classList.add('listening');
       micBtn.textContent = '⏹';
-      statusEl.textContent = 'Đang nghe... bấm lần nữa để dừng';
+      statusEl.textContent = 'Đang nghe... bấm Space hoặc nút để dừng';
     } catch (e){
       statusEl.textContent = 'Không mở được micro: ' + e.message;
+    }
+  }
+
+  function stopListening(){
+    if (!listening || stopping) return;
+    stopping = true;
+    recognition && recognition.stop();
+    statusEl.textContent = 'Đang chốt chữ cuối...';
+    scheduleSafetyCopy();
+  }
+
+  micBtn.addEventListener('click', function(){
+    if (listening) stopListening(); else startListening();
+  });
+
+  // Phím tắt (khi cửa sổ app đang được focus):
+  //   Alt+Space hoặc F9 -> bắt đầu nói (F9 dành cho script AutoHotkey gửi vào)
+  //   Space             -> dừng nói (chỉ khi đang nghe, lúc không nghe thì Space như bình thường)
+  let swallowSpaceKeyup = false;
+  document.addEventListener('keydown', function(e){
+    if (e.repeat) return;
+    if ((e.altKey && e.code === 'Space') || e.code === 'F9'){
+      e.preventDefault();
+      if (e.code === 'Space') swallowSpaceKeyup = true;
+      startListening();
+      return;
+    }
+    if (e.code === 'Space' && !e.altKey && !e.ctrlKey && !e.metaKey && listening){
+      e.preventDefault();
+      swallowSpaceKeyup = true;
+      stopListening();
+    }
+  });
+  // Nút micro đang focus sẽ tự "click" khi nhả Space; chặn để không bật/tắt hai lần.
+  document.addEventListener('keyup', function(e){
+    if (e.code === 'Space' && swallowSpaceKeyup){
+      e.preventDefault();
+      swallowSpaceKeyup = false;
     }
   });
 
