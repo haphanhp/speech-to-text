@@ -15,7 +15,7 @@ SetTitleMatchMode 2
 appTitle := "Nói ra chữ"          ; trùng với <title> của trang (app còn thêm tiền tố trạng thái)
 
 ; --- Cấu hình cách MỞ app khi chưa chạy ---
-appUrl := ""                      ; ĐIỀN địa chỉ trang, ví dụ "https://ten-ban.github.io/speech-to-text/"
+appUrl := "https://speech-to-text-iota-black.vercel.app/"
 browserExe := "chrome.exe"        ; cần trình duyệt có Web Speech API: "chrome.exe" hoặc "msedge.exe"
 
 restorePrevWindow := true         ; false: ở lại cửa sổ app, không tự quay về
