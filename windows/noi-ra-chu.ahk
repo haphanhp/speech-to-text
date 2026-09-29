@@ -9,7 +9,7 @@
 
 class NoiRaChu {
     ; --- Cấu hình ---
-    static Title := "Nói ra chữ"                                   ; trùng <title> của trang
+    static Title := "Nói ra chữ ahk_exe chrome.exe"                ; tiêu đề + đúng trình duyệt (đổi cả chrome.exe nếu dùng Edge)
     static Url := "https://speech-to-text-iota-black.vercel.app/"
     static Browser := "chrome.exe"                                 ; hoặc "msedge.exe"
     static Restore := true                                         ; xong việc thì quay về cửa sổ trước đó
