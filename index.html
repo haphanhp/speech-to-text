@@ -148,9 +148,69 @@
     font-size:13px;
     display:none;
   }
+  #ttsBox{
+    width:100%;
+    max-width:300px;
+    flex:none;
+    background:var(--panel);
+    border-radius:10px;
+    padding:8px 10px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  #ttsHeader{
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+  }
+  #ttsText{
+    width:100%;
+    height:56px;
+    resize:none;
+    background:var(--bg);
+    color:var(--text);
+    border:1px solid #334155;
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:13px;
+    font-family:inherit;
+    line-height:1.4;
+  }
+  #ttsControls{
+    display:flex;
+    gap:6px;
+    align-items:center;
+  }
+  #ttsVoice{
+    flex:1 1 auto;
+    min-width:0;
+    background:var(--bg);
+    color:var(--text);
+    border:1px solid #334155;
+    border-radius:8px;
+    padding:5px 6px;
+    font-size:11px;
+  }
+  #ttsControls button{
+    flex:none;
+    padding:6px 10px;
+    font-size:12px;
+  }
+  #ttsBox.unsupported{ display:none; }
 </style>
 </head>
 <body>
+  <div id="ttsBox">
+    <div id="ttsHeader">🔊 Đọc to văn bản</div>
+    <textarea id="ttsText" placeholder="Dán hoặc gõ văn bản cần đọc..."></textarea>
+    <div id="ttsControls">
+      <select id="ttsVoice"></select>
+      <button class="secondary" id="ttsPasteBtn">📋 Dán</button>
+      <button class="secondary" id="ttsPlayBtn">▶️ Đọc</button>
+      <button class="secondary" id="ttsStopBtn">⏹</button>
+    </div>
+  </div>
   <h1>🎤 Nói ra chữ</h1>
   <div id="status">Bấm Space hoặc nút để bắt đầu nói (tiếng Việt)</div>
   <button id="micBtn" aria-label="Bắt đầu / dừng nói">🎤</button>
@@ -174,7 +234,7 @@
       || window.navigator.standalone === true;
     if (!isStandalone) return;
     try {
-      const w = 320, h = 480, margin = 16;
+      const w = 320, h = 540, margin = 16;
       const x = Math.max(0, window.screen.availWidth - w - margin);
       const y = Math.max(0, window.screen.availHeight - h - margin);
       window.resizeTo(w, h);
@@ -409,6 +469,85 @@
   if ('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(function(){});
   }
+})();
+
+// ===== Đọc to văn bản (Text-to-Speech) — dùng Web Speech API có sẵn trong trình duyệt,
+// chạy hoàn toàn phía máy, không gọi API bên ngoài nên không lo giới hạn/quota. =====
+(function(){
+  const ttsBox = document.getElementById('ttsBox');
+  const ttsText = document.getElementById('ttsText');
+  const ttsVoiceSel = document.getElementById('ttsVoice');
+  const ttsPasteBtn = document.getElementById('ttsPasteBtn');
+  const ttsPlayBtn = document.getElementById('ttsPlayBtn');
+  const ttsStopBtn = document.getElementById('ttsStopBtn');
+
+  if (!('speechSynthesis' in window)) {
+    ttsBox.classList.add('unsupported');
+    return;
+  }
+
+  let voices = [];
+
+  function loadVoices(){
+    voices = speechSynthesis.getVoices();
+    ttsVoiceSel.innerHTML = '';
+    if (!voices.length) {
+      const opt = document.createElement('option');
+      opt.textContent = 'Chưa có giọng đọc (chờ trình duyệt tải)';
+      ttsVoiceSel.appendChild(opt);
+      return;
+    }
+    // Ưu tiên hiện giọng tiếng Việt lên đầu danh sách nếu máy có cài.
+    const indices = voices.map(function(v, i){ return i; });
+    indices.sort(function(a, b){
+      const av = voices[a].lang.toLowerCase().startsWith('vi') ? 0 : 1;
+      const bv = voices[b].lang.toLowerCase().startsWith('vi') ? 0 : 1;
+      return av - bv;
+    });
+    indices.forEach(function(i){
+      const v = voices[i];
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = v.name + ' (' + v.lang + ')';
+      ttsVoiceSel.appendChild(opt);
+    });
+  }
+
+  loadVoices();
+  // Danh sách giọng đọc thường tải bất đồng bộ (đặc biệt lần đầu) — load lại khi có.
+  if ('onvoiceschanged' in speechSynthesis) {
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+
+  ttsPasteBtn.addEventListener('click', async function(){
+    try {
+      const text = await navigator.clipboard.readText();
+      ttsText.value = text;
+      ttsText.focus();
+    } catch (e) {
+      // Trình duyệt chặn đọc clipboard tự động (thiếu quyền/không phải HTTPS) — dán tay Ctrl+V.
+      ttsText.focus();
+    }
+  });
+
+  ttsPlayBtn.addEventListener('click', function(){
+    const text = ttsText.value.trim();
+    if (!text) return;
+    speechSynthesis.cancel(); // dừng câu đang đọc dở (nếu có) trước khi đọc câu mới
+    const utter = new SpeechSynthesisUtterance(text);
+    const idx = ttsVoiceSel.value;
+    if (idx !== '' && voices[idx]) {
+      utter.voice = voices[idx];
+      utter.lang = voices[idx].lang;
+    } else {
+      utter.lang = 'vi-VN';
+    }
+    speechSynthesis.speak(utter);
+  });
+
+  ttsStopBtn.addEventListener('click', function(){
+    speechSynthesis.cancel();
+  });
 })();
 </script>
 </body>
