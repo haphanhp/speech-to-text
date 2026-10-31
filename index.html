@@ -223,7 +223,7 @@
     <div id="ttsStatus"></div>
   </div>
   <h1>🎤 Nói ra chữ</h1>
-  <div id="status">Bấm Space hoặc nút để bắt đầu nói (tiếng Việt)</div>
+  <div id="status">Bấm Alt hoặc nút để bắt đầu nói (tiếng Việt)</div>
   <button id="micBtn" aria-label="Bắt đầu / dừng nói">🎤</button>
   <div id="transcript"></div>
   <div id="actions">
@@ -420,7 +420,7 @@
       micBtn.classList.add('listening');
       micBtn.textContent = '⏹';
       setTitle('listening');
-      statusEl.textContent = 'Đang nghe... bấm Space hoặc nút để dừng';
+      statusEl.textContent = 'Đang nghe... bấm Alt hoặc nút để dừng';
     } catch (e){
       statusEl.textContent = 'Không mở được micro: ' + e.message;
     }
@@ -438,21 +438,28 @@
     if (listening) stopListening(); else startListening();
   });
 
-  // Phím tắt (khi cửa sổ app đang được focus): Space = bắt đầu nói, Space lần nữa = dừng.
-  // Script AutoHotkey chỉ cần đưa cửa sổ này lên trước (Alt+Space), còn lại bấm Space.
-  let swallowSpaceKeyup = false;
+  // Phím tắt (khi cửa sổ app đang được focus): bấm-thả Alt một mình = bật/tắt nói.
+  // Script AutoHotkey chỉ cần đưa cửa sổ này lên trước (Ctrl+Alt+Z), còn lại bấm Alt ở đây.
+  // Đổi từ Space sang Alt ngày 31/10/2026 để Space gõ được dấu cách bình thường trong ô
+  // "Đọc to văn bản" (trước đó Space bị bắt toàn cục nên không gõ cách được trong ô đó).
+  // Chỉ tính là "bấm Alt một mình" khi không có phím nào khác được bấm trong lúc giữ Alt —
+  // nhờ vậy Alt+Tab, Alt+F4... vẫn hoạt động bình thường, không bị hiểu nhầm thành bật/tắt nói.
+  let altHeld = false;
+  let altChordUsed = false;
   document.addEventListener('keydown', function(e){
-    if (e.code !== 'Space' || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
-    e.preventDefault();
-    swallowSpaceKeyup = true;
-    if (listening) stopListening(); else startListening();
-  });
-  // Nút micro đang focus sẽ tự "click" khi nhả Space; chặn để không bật/tắt hai lần.
-  document.addEventListener('keyup', function(e){
-    if (e.code === 'Space' && swallowSpaceKeyup){
-      e.preventDefault();
-      swallowSpaceKeyup = false;
+    if (e.key === 'Alt') {
+      if (!altHeld) { altHeld = true; altChordUsed = false; }
+      return;
     }
+    if (altHeld) altChordUsed = true;
+  });
+  document.addEventListener('keyup', function(e){
+    if (e.key !== 'Alt') return;
+    altHeld = false;
+    if (!altChordUsed) {
+      if (listening) stopListening(); else startListening();
+    }
+    altChordUsed = false;
   });
 
   copyBtn.addEventListener('click', function(){

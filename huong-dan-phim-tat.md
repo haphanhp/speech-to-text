@@ -11,16 +11,18 @@ Bấm một phím tắt là mở app, nói, dừng, chữ tự vào clipboard v�
 **Chuỗi thao tác**
 
 1. `Ctrl+Alt+Z` (ở bất kỳ cửa sổ nào): mở app "Nói ra chữ" nếu chưa chạy, hoặc đưa lên trước nếu đang chạy.
-2. `Space`: bắt đầu nói.
-3. `Space` lần nữa: dừng. App tự copy ngay khi engine nhận diện kết thúc.
+2. `Alt` (bấm rồi thả, không kèm phím khác): bắt đầu nói.
+3. `Alt` lần nữa: dừng. App tự copy ngay khi engine nhận diện kết thúc.
 4. Nút Copy đổi thành **✓ Copied** (dấu tick động) để bạn biết đã copy.
 5. Script đưa bạn về cửa sổ trước đó, bấm `Ctrl+V` để dán.
+
+> Đổi từ `Space` sang `Alt` ngày 31/10/2026: từ khi thêm ô "Đọc to văn bản" (text-to-speech) vào trang, `Space` cần gõ được dấu cách bình thường trong ô đó, nên chuyển phím bắt đầu/dừng nói sang `Alt`. Bấm Alt kèm phím khác (Alt+Tab, Alt+F4...) vẫn hoạt động bình thường, không bị hiểu nhầm.
 
 ### Phần nào dùng cho ai
 
 | Phần | Ai dùng được | Cần gì |
 |---|---|---|
-| `Space` bắt đầu/dừng, tự copy, nút Copied | Mọi người dùng app | Chỉ cần cửa sổ app đang được focus |
+| `Alt` bắt đầu/dừng, tự copy, nút Copied | Mọi người dùng app | Chỉ cần cửa sổ app đang được focus |
 | `Ctrl+Alt+Z` toàn cục, tự mở app, tự quay về cửa sổ cũ | Chỉ máy của bạn | AutoHotkey v2 |
 
 Trang web không thể nghe phím khi bạn đang ở cửa sổ khác. Đó là lý do phím tắt toàn cục cần AutoHotkey bên ngoài.
@@ -59,7 +61,7 @@ Dùng Edge thì đổi `Title` thành `... ahk_exe msedge.exe` và `Browser` th�
 | Không phản hồi khi bấm `Ctrl+Alt+Z` | Bàn phím coi `Ctrl+Alt` là AltGr, hoặc chưa Reload Script | Reload Script; nếu vẫn không được thì đổi tổ hợp khác |
 | Không mở được app | `Url` hoặc `Browser` sai | Kiểm tra hai biến này |
 | "Chưa copy" | Trình duyệt chặn ghi clipboard khi cửa sổ mất focus | Bấm nút Copy tay; giữ cửa sổ app focus trong lúc dừng |
-| Space không nói/dừng | Cửa sổ app chưa được focus | Bấm `Ctrl+Alt+Z` để đưa app lên trước |
+| Alt không nói/dừng | Cửa sổ app chưa được focus | Bấm `Ctrl+Alt+Z` để đưa app lên trước |
 
 ### Giới hạn đã biết
 
