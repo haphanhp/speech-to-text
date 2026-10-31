@@ -37,6 +37,17 @@ Text nhận được tự copy vào clipboard ngay khi engine nhận diện kế
 
 <img src="https://raw.githubusercontent.com/tudotaichinh/image-auto/Obsidian/Obsidian20260928164900.png" width="400">
 
+### Dịch clipboard nhanh (không mở app)
+
+Công cụ riêng, không liên quan tới app "Nói ra chữ" ở trên — chỉ dùng chung repo này cho gọn.
+
+Copy đoạn text bất kỳ (tiếng Anh, tiếng gì cũng được) → bấm `Ctrl+Alt+D` ở bất kỳ đâu → bản dịch tiếng Việt tự nằm sẵn trong clipboard, `Ctrl+V` để dán. Không mở cửa sổ, không mở trình duyệt — chạy ngầm, gọi thẳng endpoint dịch miễn phí của Google (`translate.googleapis.com`, tham số `client=gtx`, không cần API key — cùng cơ chế các công cụ mã nguồn mở như `googletrans`/`translate-shell` vẫn dùng, khác với Google Cloud Translation API chính thức phải trả phí).
+
+- File: `windows/dich-clipboard.ahk` (AutoHotkey v2) — chạy riêng file này, hoặc dán nội dung vào cuối script AHK v2 chính đang chạy cùng Windows.
+- Đổi ngôn ngữ đích: sửa `"vi"` trong dòng `GoogleTranslateFree(text, "vi")`.
+- Đổi phím tắt: sửa `^!d::` ở đầu file (`^` = Ctrl, `!` = Alt).
+- Giới hạn: endpoint miễn phí không chính thức, không có SLA — nếu Google đổi/chặn endpoint này thì cần thay bằng provider khác (DeepL free key, v.v.).
+
 ### Phím tắt
 
 Hướng dẫn đầy đủ: [huong-dan-phim-tat.md](huong-dan-phim-tat.md).
