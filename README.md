@@ -39,19 +39,43 @@ Text nhận được tự copy vào clipboard ngay khi engine nhận diện kế
 
 ### Dịch clipboard nhanh (không mở app)
 
-Công cụ riêng, không liên quan tới app "Nói ra chữ" ở trên — chỉ dùng chung repo này cho gọn.
+Công cụ riêng, không liên quan tới app "Nói ra chữ" ở trên — chỉ dùng chung repo này cho gọn. Chạy qua AutoHotkey, không phải trong trang web.
 
-Copy đoạn text bất kỳ (tiếng Anh, tiếng gì cũng được) → bấm `Ctrl+Alt+D` ở bất kỳ đâu → bản dịch tiếng Việt tự nằm sẵn trong clipboard, `Ctrl+V` để dán. Không mở cửa sổ, không mở trình duyệt — chạy ngầm, gọi thẳng endpoint dịch miễn phí của Google (`translate.googleapis.com`, tham số `client=gtx`, không cần API key — cùng cơ chế các công cụ mã nguồn mở như `googletrans`/`translate-shell` vẫn dùng, khác với Google Cloud Translation API chính thức phải trả phí).
+- `Ctrl+Alt+V` ở bất kỳ đâu: copy đoạn text bất kỳ → bấm tổ hợp này → bản dịch **tiếng Việt** tự nằm sẵn trong clipboard, `Ctrl+V` để dán.
+- `Ctrl+Alt+D` ở bất kỳ đâu: mở 1 cửa sổ nhỏ kiểu mini Google Dịch — chọn ngôn ngữ nguồn (có "Tự động nhận diện") và ngôn ngữ đích (Việt/Anh/Trung/Pháp), dùng khi không dịch sang tiếng Việt.
 
-- File: `windows/dich-clipboard.ahk` (AutoHotkey v2) — chạy riêng file này, hoặc dán nội dung vào cuối script AHK v2 chính đang chạy cùng Windows.
-- Đổi ngôn ngữ đích: sửa `"vi"` trong dòng `GoogleTranslateFree(text, "vi")`.
-- Đổi phím tắt: sửa `^!d::` ở đầu file (`^` = Ctrl, `!` = Alt).
-- Giới hạn: endpoint miễn phí không chính thức, không có SLA — nếu Google đổi/chặn endpoint này thì cần thay bằng provider khác (DeepL free key, v.v.).
+Không mở trình duyệt, chạy ngầm, gọi thẳng 2 nguồn dịch miễn phí không cần API key, theo kiểu nguồn chính + dự phòng:
+- **Google** (`translate.googleapis.com/translate_a/single`, `client=gtx`) — cùng cơ chế các công cụ mã nguồn mở như `googletrans`/`translate-shell` vẫn dùng, khác với Google Cloud Translation API chính thức phải trả phí.
+- **MyMemory** (`api.mymemory.translated.net`) làm dự phòng khi Google lỗi/rỗng (vd bị rate-limit) — hạ tầng khác hẳn Google nên hiếm khi cùng bị chặn một lúc.
+
+- File: `windows/dich-clipboard.ahk` (AutoHotkey v2) — bản dự phòng/tham khảo trong repo, không chạy trực tiếp. Bản đang chạy thật nằm ở script chính trên máy cá nhân (gộp chung với các hotkey khác để đỡ nhiều process AHK).
+- Đổi ngôn ngữ đích của `Ctrl+Alt+V`: sửa `"vi"` trong dòng `GoogleTranslateFree(text, "vi")`.
+- Đổi phím tắt: sửa `^!v::` / `^!d::` ở đầu file (`^` = Ctrl, `!` = Alt).
+- Giới hạn: cả 2 endpoint đều miễn phí/không chính thức, không có SLA — nếu cả 2 cùng bị chặn/hết quota thì cần thêm provider khác (DeepL free key, v.v.).
+
+### Đọc to văn bản (Text-to-Speech)
+
+Nằm ngay trong trang `index.html`, ô "🔊 Đọc to văn bản" phía trên ô "Nói ra chữ" — không phải tool riêng, không cần cài gì thêm, không có hotkey toàn cục.
+
+Dán hoặc gõ văn bản vào ô, chọn ngôn ngữ (Việt / Anh / Trung / Pháp), bấm "▶️ Đọc". Nút "📋 Dán" tự lấy nội dung đang có trong clipboard; nút "⏹" dừng đọc.
+
+**Cơ chế 2 lớp (giống mô hình dịch ở trên: nguồn chính + dự phòng):**
+- **Ưu tiên giọng cài sẵn trên Windows** (Web Speech API `speechSynthesis`) — đọc hoàn toàn offline trên máy, miễn phí, không giới hạn, chất lượng tùy giọng SAPI đã cài.
+- **Nếu máy chưa có giọng cho ngôn ngữ đã chọn**, tự động rớt sang **Google Translate TTS** (`translate.google.com/translate_tts`, không cần API key) — đọc online qua mạng; văn bản dài tự cắt thành nhiều đoạn ngắn (~180 ký tự/đoạn) rồi phát nối tiếp.
+
+**Cài thêm giọng đọc tiếng Trung/Pháp trên Windows (để đọc offline, không phụ thuộc mạng/Google TTS):**
+1. Mở **Settings → Time & Language → Language & region**.
+2. Bấm **"Add a language"**, tìm và thêm **"Chinese (Simplified, China)"** và **"French (France)"**.
+3. Bấm vào từng ngôn ngữ vừa thêm → mục **"Speech"** → đợi tải xong (ngôn ngữ và giọng đọc Text-to-speech đôi khi là 2 gói tải riêng — kiểm cả hai, đừng tưởng thêm ngôn ngữ xong là có giọng luôn).
+4. Kiểm lại tại **Settings → Time & Language → Speech → "Manage voices"** (hoặc mục "Installed voice packages" tương đương) để xác nhận đã có đủ Chinese/French.
+5. **Đóng hẳn toàn bộ Chrome** (kiểm cả khay hệ thống, vì Chrome có thể vẫn chạy ngầm) rồi mở lại — Chrome chỉ đọc danh sách giọng SAPI **một lần lúc khởi động tiến trình**, F5 trang không đủ để nhận giọng mới. Nếu vẫn chưa thấy, khởi động lại máy.
+
+Lưu ý chung khi code trang web có cập nhật (push lên GitHub, Vercel tự build lại): **F5 lại cửa sổ "Nói ra chữ" đang mở** để tải code mới — mở app qua `Ctrl+Alt+Z` chỉ đưa cửa sổ cũ lên trước, không tự tải lại trang.
 
 ### Phím tắt
 
 Hướng dẫn đầy đủ: [huong-dan-phim-tat.md](huong-dan-phim-tat.md).
 
-- Trong cửa sổ app: `Space` bắt đầu nói, `Space` lần nữa dừng nói (app tự copy ngay khi engine kết thúc).
-- Phím tắt toàn cục (tuỳ chọn, chỉ cho máy bạn): chạy `windows/noi-ra-chu.ahk` bằng AutoHotkey v2. `Ctrl+Alt+Z` ở bất kỳ cửa sổ nào: nếu app đang chạy thì đưa lên trước, nếu chưa chạy thì tự mở bằng địa chỉ web (điền `appUrl` trong file). Sau đó `Space` để nói, `Space` để dừng. Khi app báo "Đã copy", script đưa bạn về cửa sổ trước đó (tắt bằng `restorePrevWindow := false`).
+- Trong cửa sổ app: `Alt` (bấm rồi thả, không kèm phím khác) bắt đầu nói, `Alt` lần nữa dừng nói (app tự copy ngay khi engine kết thúc). Đổi từ `Space` sang `Alt` ngày 31/10/2026 để `Space` gõ được dấu cách bình thường trong ô "Đọc to văn bản" mới thêm (trước đó `Space` bị bắt toàn cục nên không gõ cách được trong ô đó).
+- Phím tắt toàn cục (tuỳ chọn, chỉ cho máy bạn): chạy `windows/noi-ra-chu.ahk` bằng AutoHotkey v2. `Ctrl+Alt+Z` ở bất kỳ cửa sổ nào: nếu app đang chạy thì đưa lên trước, nếu chưa chạy thì tự mở bằng địa chỉ web (điền `appUrl` trong file). Sau đó `Alt` để nói, `Alt` để dừng. Khi app báo "Đã copy", script đưa bạn về cửa sổ trước đó (tắt bằng `restorePrevWindow := false`).
 - App đổi tiêu đề cửa sổ theo trạng thái (đang nghe, đang copy, đã copy, chưa copy) để script biết khi nào xong.
